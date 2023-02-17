@@ -6,6 +6,9 @@ import re
 
 import gensim
 from gensim.models import Word2Vec
+import nltk
+from nltk.tokenize import word_tokenize
+nltk.download('punkt')
 
 # Reading all PDF files from 'books' directory and storing it in text variable as string
 text = ''
@@ -18,35 +21,26 @@ for file in os.listdir('books'):
 
 # Find all words in text and store it to the list of separate strings
 words = re.findall(r"[\w']+", text)
-# Here we have around 760103 words
-# print(len(words))
-new_words = []
-for word in words:
-    new_words.append(word.lower())
 # Removing all duplicates from the list
-new_words = list(dict.fromkeys(new_words))
-# Now we have 89250 words
-# print(len(new_words))
+words = list(dict.fromkeys(words))
 
 # Creating regex for matching only words written in Serbian Latin alphabet and removing those that do not match it
 serbian_latin_alphabet = "abcdefghijklmnopqrstuvwxyzčćđšž"  # define the Serbian Latin alphabet
 regex = f'^[{serbian_latin_alphabet}{serbian_latin_alphabet.upper()}]+$'
-new_list_of_words = [i for i in new_words if re.match(regex, i)]
-# print(len(new_list_of_words))
-# Now there are 60848 unique words written strictly in Serbian Latin in the new_list_of_words array
-# (Numbers are only for reference and will change if new pdfs are added to the 'books' directory)
+new_list_of_words = [i for i in words if re.match(regex, i)]
+# Now there are n unique words written strictly in Serbian Latin in the new_list_of_words array
 # These words will be used as a dataset for neural networks
-print(sorted(new_list_of_words))
 
+# Tokenizing words for word2vec algorithm
+tokenized_words = [word_tokenize(document.lower()) for document in new_list_of_words]
 # Now that we have our dataset we can create vector using word2vec.
 # This vector will be used as input to our convolutional autoencoder
 
 # Create CBOW model
-model1 = gensim.models.Word2Vec(new_list_of_words, min_count=1)
-# print(model1.wv['arsen'])
-
+model1 = gensim.models.Word2Vec(tokenized_words, min_count=1)
 # Create Skip Gram model
-# model2 = gensim.models.Word2Vec(new_list_of_words, min_count=1, vector_size=len(new_list_of_words), window=5, sg=1)
+model2 = gensim.models.Word2Vec(tokenized_words, min_count=1)
 
+print(model1.wv['arsen'])
 print(model1.wv.similarity('arsen', 'arsenal'))
-# print(model2.wv.similarity('arsen', 'arsenal'))
+print(model2.wv.similarity('aritmija', 'aritmičan'))
